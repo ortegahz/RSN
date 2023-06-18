@@ -1,0 +1,25 @@
+# map
+cd /tmp/pycharm_project_204
+conda activate rsn
+
+# dataset
+ln -s /media/manu/kingstoo/coco_2014/images /media/manu/kingstop/workspace/RSN/dataset/COCO
+ln -s /media/manu/kingstoo/coco_2014/images /media/manu/kingstop/workspace/RSN/dataset/COCO
+
+# install
+export RSN_HOME='/media/manu/kingstop/workspace/RSN'
+export RSN_HOME='/tmp/pycharm_project_204'
+export PYTHONPATH=$PYTHONPATH:$RSN_HOME
+
+pip install numpy==1.23.5
+
+# train
+python config.py -log
+screen python -m torch.distributed.launch --nproc_per_node=8 train.py
+
+# test
+python -m torch.distributed.launch --nproc_per_node=8 test.py -i last
+
+# tensorboard
+tensorboard --logdir model_logs/ortega/RSN18.coco/tb_dir --bind_all
+http://192.168.3.10:6006/
