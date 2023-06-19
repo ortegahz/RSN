@@ -103,27 +103,32 @@ class Inferer:
         return results
 
     def draw_results(self, img, results):
-        score = results[0]['score']
-        joints = np.array(results[0]['keypoints']).reshape((self.attr.KEYPOINT.NUM, 3))
-        pairs = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12],
-                 [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11], [2, 3],
-                 [1, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7]]
-        color = np.random.randint(0, 256, (self.attr.KEYPOINT.NUM, 3)).tolist()
+        for i, result in enumerate(results):
+            score = results[i]['score']
+            joints = np.array(results[i]['keypoints']).reshape((self.attr.KEYPOINT.NUM, 3))
+            pairs = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12],
+                     [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11], [2, 3],
+                     [1, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7]]
+            color = np.random.randint(0, 256, (self.attr.KEYPOINT.NUM, 3)).tolist()
 
-        for i in range(self.attr.KEYPOINT.NUM):
-            if joints[i, 0] > 0 and joints[i, 1] > 0:
-                cv2.circle(img, tuple(joints[i, :2].astype(int)), 2, tuple(color[i]), 2)
-        if score:
-            cv2.putText(img, f'{score}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.2,
-                        (128, 255, 0), 2)
+            for i in range(self.attr.KEYPOINT.NUM):
+                if i != 9 and i != 10:
+                    continue
+                color = (255, 0, 0) if i == 9 else (0, 255, 0)
+                if joints[i, 0] > 0 and joints[i, 1] > 0:
+                    # cv2.circle(img, tuple(joints[i, :2].astype(int)), 2, tuple(color[i]), 2)
+                    cv2.circle(img, tuple(joints[i, :2].astype(int)), 2, color, 2)
+            # if score:
+            #     cv2.putText(img, f'{score}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.2,
+            #                 (128, 255, 0), 2)
 
-        def draw_line(img, p1, p2):
-            c = (0, 0, 255)
-            if p1[0] > 0 and p1[1] > 0 and p2[0] > 0 and p2[1] > 0:
-                cv2.line(img, tuple(p1), tuple(p2), c, 2)
+            def draw_line(img, p1, p2):
+                c = (0, 0, 255)
+                if p1[0] > 0 and p1[1] > 0 and p2[0] > 0 and p2[1] > 0:
+                    cv2.line(img, tuple(p1), tuple(p2), c, 2)
 
-        for pair in pairs:
-            draw_line(img, joints[pair[0] - 1, :2].astype(int), joints[pair[1] - 1, :2].astype(int))
+            for pair in pairs:
+                draw_line(img, joints[pair[0] - 1, :2].astype(int), joints[pair[1] - 1, :2].astype(int))
 
         return img
 
