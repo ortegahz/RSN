@@ -15,12 +15,12 @@ from lib.utils.transforms import get_affine_transform
 
 
 class Inferer:
-    def __init__(self, args):
-        cuda = args.device != -1 and torch.cuda.is_available()
-        self.device = torch.device(f'cuda:{args.device}' if cuda else 'cpu')
+    def __init__(self, weights, device=0):
+        cuda = device != -1 and torch.cuda.is_available()
+        self.device = torch.device(f'cuda:{device}' if cuda else 'cpu')
         self.model = RSN(cfg)
         self.model.to(self.device)
-        model_file = args.weights
+        model_file = weights
         if os.path.exists(model_file):
             state_dict = torch.load(
                 model_file, map_location=self.device)
@@ -205,7 +205,7 @@ def main():
     args = parse_args()
     set_logging()
     logging.info(args)
-    inferer = Inferer(args)
+    inferer = Inferer(args.weights, args.device)
 
     img = cv2.imread(args.source, cv2.IMREAD_COLOR)
     dets = np.array([[153.53, 231.12, 270.17, 403.95, 0.3091]])
