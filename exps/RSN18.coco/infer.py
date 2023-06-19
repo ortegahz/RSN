@@ -90,7 +90,33 @@ class Inferer:
                                 score=score))
         return results
 
-    def _get_results(self, outputs, centers, scales, kernel=11, shifts=[0.25]):
+    def draw_results(self, img, results):
+        score = results[0]['score']
+        joints = np.array(results[0]['keypoints']).reshape((self.attr.KEYPOINT.NUM, 3))
+        pairs = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12],
+                 [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11], [2, 3],
+                 [1, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7]]
+        color = np.random.randint(0, 256, (self.attr.KEYPOINT.NUM, 3)).tolist()
+
+        for i in range(self.attr.KEYPOINT.NUM):
+            if joints[i, 0] > 0 and joints[i, 1] > 0:
+                cv2.circle(img, tuple(joints[i, :2].astype(int)), 2, tuple(color[i]), 2)
+        if score:
+            cv2.putText(img, f'{score}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.2,
+                        (128, 255, 0), 2)
+
+        def draw_line(img, p1, p2):
+            c = (0, 0, 255)
+            if p1[0] > 0 and p1[1] > 0 and p2[0] > 0 and p2[1] > 0:
+                cv2.line(img, tuple(p1), tuple(p2), c, 2)
+
+        for pair in pairs:
+            draw_line(img, joints[pair[0] - 1, :2].astype(int), joints[pair[1] - 1, :2].astype(int))
+
+        return img
+
+    @staticmethod
+    def _get_results(outputs, centers, scales, kernel=11, shifts=[0.25]):
         scales *= 200
         nr_img = outputs.shape[0]
         preds = np.zeros((nr_img, cfg.DATASET.KEYPOINT.NUM, 2))
@@ -163,6 +189,11 @@ def main():
     img = cv2.imread(args.source, cv2.IMREAD_COLOR)
     results = inferer.inference(img)
     logging.info(results)
+
+    img = inferer.draw_results(img, results)
+    cv2.imshow('results', img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
