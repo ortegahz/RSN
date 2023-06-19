@@ -18,8 +18,11 @@ python config.py -log
 screen python -m torch.distributed.launch --nproc_per_node=8 train.py
 
 # test
-python -m torch.distributed.launch --nproc_per_node=8 test.py -i last
+python -m torch.distributed.launch --nproc_per_node=8 test.py -i 96000
 
 # tensorboard
 tensorboard --logdir model_logs/ortega/RSN18.coco/tb_dir --bind_all
 http://192.168.3.10:6006/
+
+# debug
+/media/manu/kingstop/workspace/RSN/dataset/COCO/images/val2014/COCO_val2014_000000369037.jpg

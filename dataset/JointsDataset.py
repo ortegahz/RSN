@@ -77,11 +77,18 @@ class JointsDataset(Dataset):
 
         joints = d['joints'][:, :2]
         joints_vis = d['joints'][:, -1].reshape((-1, 1))
+
+        # import pickle
+        # with open('d.pkl', 'wb') as f:
+        #     pickle.dump(d, f)
         
         center = d['center']
         scale = d['scale']
         score = d['score'] if 'score' in d else 1
         rotation = 0
+
+        # if img_id == 369037 and score == 0.3091:
+        #     img_id = 999999
 
         if self.stage == 'train':
             scale[0] *= (1 + self.basic_ext)
