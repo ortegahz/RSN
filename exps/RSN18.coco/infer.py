@@ -31,35 +31,49 @@ class Inferer:
         normalize = transforms.Normalize(mean=cfg.INPUT.MEANS, std=cfg.INPUT.STDS)
         self.transform = transforms.Compose([transforms.ToTensor(), normalize])
 
-    def inference(self, img):
+    def _bbox_to_center_and_scale(self, bbox):
+        x, y, w, h = bbox
+
+        center = np.zeros(2, dtype=np.float32)
+        center[0] = x + w / 2.0
+        center[1] = y + h / 2.0
+
+        scale = np.array([w * 1.0 / self.attr.PIXEL_STD, h * 1.0 / self.attr.PIXEL_STD],
+                         dtype=np.float32)
+
+        return center, scale
+
+    def inference(self, img, dets):
         if self.attr.COLOR_RGB:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        import pickle
-        with open('/home/manu/tmp/d.pkl', 'rb') as f:
-            d = pickle.load(f)
-        img_id = d['img_id']
-        center = d['center']
-        scale = d['scale']
-        score = d['score'] if 'score' in d else 1.
-        rotation = 0
-        scale[0] *= (1. + self.attr.TEST.X_EXTENTION)
-        scale[1] *= (1. + self.attr.TEST.Y_EXTENTION)
-        # fit the ratio
-        if scale[0] > self.attr.WIDTH_HEIGHT_RATIO * scale[1]:
-            scale[1] = scale[0] * 1.0 / self.attr.WIDTH_HEIGHT_RATIO
-        else:
-            scale[0] = scale[1] * 1.0 * self.attr.WIDTH_HEIGHT_RATIO
-        trans = get_affine_transform(center, scale, rotation, self.attr.INPUT_SHAPE)
 
-        img = cv2.warpAffine(img, trans, (int(self.attr.INPUT_SHAPE[1]), int(self.attr.INPUT_SHAPE[0])),
-                             flags=cv2.INTER_LINEAR)
-        if self.transform:
-            img = self.transform(img)
+        imgs, scores, centers, scales = [], [], [], []
+        for *bbox, score in dets:
+            center, scale = self._bbox_to_center_and_scale(bbox)
+            rotation = 0
+            scale[0] *= (1. + self.attr.TEST.X_EXTENTION)
+            scale[1] *= (1. + self.attr.TEST.Y_EXTENTION)
+            # fit the ratio
+            if scale[0] > self.attr.WIDTH_HEIGHT_RATIO * scale[1]:
+                scale[1] = scale[0] * 1.0 / self.attr.WIDTH_HEIGHT_RATIO
+            else:
+                scale[0] = scale[1] * 1.0 * self.attr.WIDTH_HEIGHT_RATIO
+            trans = get_affine_transform(center, scale, rotation, self.attr.INPUT_SHAPE)
+
+            img_wa = cv2.warpAffine(img, trans, (int(self.attr.INPUT_SHAPE[1]), int(self.attr.INPUT_SHAPE[0])),
+                                    flags=cv2.INTER_LINEAR)
+            if self.transform:
+                img_wa = self.transform(img_wa)
+
+            imgs.append(img_wa)
+            scores.append(score)
+            centers.append(center)
+            scales.append(scale)
+
         self.model.eval()
         results = list()
         cpu_device = torch.device("cpu")
-        imgs, scores, centers, scales, img_ids = img[None, :, :, :], [score], [center], [scale], [img_id]
-        imgs = imgs.to(self.device)
+        imgs = torch.stack(imgs).to(self.device)
         with torch.no_grad():
             outputs = self.model(imgs)
             outputs = outputs.to(cpu_device).numpy()
@@ -82,10 +96,8 @@ class Inferer:
         for i in range(preds.shape[0]):
             keypoints = preds[i].reshape(-1).tolist()
             score = scores[i] * kp_scores[i]
-            image_id = img_ids[i]
 
-            results.append(dict(image_id=image_id,
-                                category_id=1,
+            results.append(dict(category_id=1,
                                 keypoints=keypoints,
                                 score=score))
         return results
@@ -165,6 +177,15 @@ class Inferer:
         return preds, maxvals
 
 
+def draw_dets(img, dets, color=(0, 255, 255)):
+    for x, y, w, h, score in dets:
+        cv2.rectangle(img, (int(x), int(y)),
+                      (int(x + w), int(y + h)), color,
+                      thickness=5, lineType=cv2.LINE_AA)
+        cv2.putText(img, f'{score:.2f}', (int(x), int(y) - 2),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 2)
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source',
@@ -187,7 +208,11 @@ def main():
     inferer = Inferer(args)
 
     img = cv2.imread(args.source, cv2.IMREAD_COLOR)
-    results = inferer.inference(img)
+    dets = np.array([[153.53, 231.12, 270.17, 403.95, 0.3091]])
+
+    # draw_dets(img, dets)
+
+    results = inferer.inference(img, dets)
     logging.info(results)
 
     img = inferer.draw_results(img, results)
