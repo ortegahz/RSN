@@ -32,6 +32,12 @@ def get_affine_transform(center, scale, rot, output_size):
 
     trans = cv2.getAffineTransform(np.float32(src), np.float32(dst))
 
+    # img_d = cv2.imread('/media/manu/kingstop/workspace/RSN/dataset/COCO/images/val2014/COCO_val2014_000000369037.jpg',
+    #                    cv2.IMREAD_COLOR)
+    # for src_pick in src:
+    #     cv2.circle(img_d, (int(src_pick[0]), int(src_pick[1])), 2, (0, 255, 0), 2)
+    # cv2.imwrite('/home/manu/tmp/rsn.bmp', img_d)
+
     return trans
 
 

@@ -62,6 +62,7 @@ class Inferer:
 
             img_wa = cv2.warpAffine(img, trans, (int(self.attr.INPUT_SHAPE[1]), int(self.attr.INPUT_SHAPE[0])),
                                     flags=cv2.INTER_LINEAR)
+            # cv2.imwrite('/home/manu/tmp/rsn.bmp', img_wa)
             if self.transform:
                 img_wa = self.transform(img_wa)
 
@@ -76,6 +77,9 @@ class Inferer:
         imgs = torch.stack(imgs).to(self.device)
         with torch.no_grad():
             outputs = self.model(imgs)
+            np.savetxt('/home/manu/tmp/pytorch_outputs_rsn.txt',
+                       outputs.detach().cpu().numpy().flatten(),
+                       fmt="%f", delimiter="\n")
             outputs = outputs.to(cpu_device).numpy()
 
             if cfg.TEST.FLIP:
@@ -213,7 +217,7 @@ def main():
     inferer = Inferer(args.weights, args.device)
 
     img = cv2.imread(args.source, cv2.IMREAD_COLOR)
-    dets = np.array([[153.53, 231.12, 270.17, 403.95, 0.3091]])
+    dets = np.array([[153.53, 231.12, 270.17, 403.95, 0.3091]])  # [x, y, w, h, score]
 
     # draw_dets(img, dets)
 
