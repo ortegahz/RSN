@@ -42,7 +42,7 @@ class COCO:
     TRAIN.GAUSSIAN_KERNELS = [(15, 15), (11, 11), (9, 9), (7, 7), (5, 5)]
 
     TEST = edict()
-    TEST.FLIP = True
+    TEST.FLIP = False
     TEST.X_EXTENTION = 0.01 * 9.0
     TEST.Y_EXTENTION = 0.015 * 9.0
     TEST.SHIFT_RATIOS = [0.25]

@@ -18,14 +18,16 @@ def run(args):
     session = ort.InferenceSession(args.path_weights, providers=['CPUExecutionProvider'])
     names_out = [i.name for i in session.get_outputs()]
 
-    img = (img.astype(np.float32) / 255. - np.array([0.406, 0.456, 0.485])) / np.array([0.225, 0.224, 0.229])
+    # img = (img.astype(np.float32) / 255. - np.array([0.406, 0.456, 0.485])) / np.array([0.225, 0.224, 0.229])
+    img = (img.astype(np.float32) - np.array([103.5300, 116.2800, 123.6750])) / np.array([57.3750,  57.1200,  58.3950])
     img = img.transpose((2, 0, 1))
     batch = np.expand_dims(img, 0)
     batch = batch.astype(np.float32)
     batch = np.ascontiguousarray(batch)
 
     outputs = session.run(names_out, {'images': batch})
-    np.savetxt(f'/home/manu/tmp/onnx_outputs_rsn.txt', outputs[0].flatten(), fmt="%f", delimiter="\n")
+    for i, output in enumerate(outputs):
+        np.savetxt(f'/home/manu/tmp/onnx_outputs_{i}.txt', output.flatten(), fmt="%f", delimiter="\n")
 
 
 def set_logging():

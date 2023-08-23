@@ -2,6 +2,7 @@
 @author: Yuanhao Cai
 @date:  2020.03
 """
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -30,6 +31,9 @@ class conv_bn_relu(nn.Module):
                 x = conv(x)
                 if has_bn:
                     x = bn(x)
+                # np.savetxt(f'/home/manu/tmp/pytorch_outputs_x.txt',
+                #            x.detach().cpu().numpy().flatten(),
+                #            fmt="%f", delimiter="\n")
                 if has_relu:
                     x = relu(x)
                 return x

@@ -131,8 +131,8 @@ class Inferer:
                 if p1[0] > 0 and p1[1] > 0 and p2[0] > 0 and p2[1] > 0:
                     cv2.line(img, tuple(p1), tuple(p2), c, 2)
 
-            for pair in pairs:
-                draw_line(img, joints[pair[0] - 1, :2].astype(int), joints[pair[1] - 1, :2].astype(int))
+            # for pair in pairs:
+            #     draw_line(img, joints[pair[0] - 1, :2].astype(int), joints[pair[1] - 1, :2].astype(int))
 
         return img
 
@@ -175,6 +175,12 @@ class Inferer:
                 kps[w] = np.array([x * 4 + 2, y * 4 + 2])
                 scores[w, 0] = score_map[w, int(round(y) + 1e-9), \
                                          int(round(x) + 1e-9)]
+                # fn_txt = '/home/manu/tmp/results_pytorch.txt'
+                # if os.path.exists(fn_txt):
+                #     os.remove(fn_txt)
+                # for kp, score in zip(kps, scores):
+                #     with open(fn_txt, 'a') as f:
+                #         f.write(f'{kp[0]} {kp[1]} {score[0]} \n')
             # aligned or not ...
             kps[:, 0] = kps[:, 0] / cfg.INPUT_SHAPE[1] * scales[i][0] + \
                         centers[i][0] - scales[i][0] * 0.5
@@ -198,7 +204,7 @@ def draw_dets(img, dets, color=(0, 255, 255)):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source',
-                        default='/media/manu/kingstop/workspace/RSN/dataset/COCO/images/val2014/COCO_val2014_000000369037.jpg',
+                        default='/media/manu/samsung/pics/rsn.bmp',
                         type=str)
     parser.add_argument('--weights', default='/home/manu/tmp/iter-96000.pth', type=str)
     parser.add_argument('--device', default=0, type=int, help='-1 for cpu')
@@ -217,12 +223,21 @@ def main():
     inferer = Inferer(args.weights, args.device)
 
     img = cv2.imread(args.source, cv2.IMREAD_COLOR)
+    # cv2.imwrite('/home/manu/tmp/rsn_org.bmp', img)
     dets = np.array([[153.53, 231.12, 270.17, 403.95, 0.3091]])  # [x, y, w, h, score]
 
     # draw_dets(img, dets)
 
     results = inferer.inference(img, dets)
     logging.info(results)
+
+    fn_txt = '/home/manu/tmp/results_pytorch.txt'
+    if os.path.exists(fn_txt):
+        os.remove(fn_txt)
+    joints = np.array(results[0]['keypoints']).reshape((17, 3))
+    for kp in joints:
+        with open(fn_txt, 'a') as f:
+            f.write(f'{kp[0]} {kp[1]} \n')
 
     img = inferer.draw_results(img, results)
     cv2.imshow('results', img)
