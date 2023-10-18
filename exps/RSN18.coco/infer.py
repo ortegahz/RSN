@@ -63,6 +63,7 @@ class Inferer:
             img_wa = cv2.warpAffine(img, trans, (int(self.attr.INPUT_SHAPE[1]), int(self.attr.INPUT_SHAPE[0])),
                                     flags=cv2.INTER_LINEAR)
             # cv2.imwrite('/home/manu/tmp/rsn.bmp', img_wa)
+            np.savetxt('/home/manu/tmp/pytorch_output_img_wa.txt', img_wa.flatten(), fmt="%f", delimiter="\n")
             if self.transform:
                 img_wa = self.transform(img_wa)
 
@@ -152,7 +153,9 @@ class Inferer:
                            cfg.OUTPUT_SHAPE[0] + 2 * border, cfg.OUTPUT_SHAPE[1] + 2 * border))
             dr[:, border: -border, border: -border] = outputs[i].copy()
             for w in range(cfg.DATASET.KEYPOINT.NUM):
+                # np.savetxt('/home/manu/tmp/pytorch_output_dr_%s.txt' % w, dr[w].flatten(), fmt="%f", delimiter="\n")
                 dr[w] = cv2.GaussianBlur(dr[w], (kernel, kernel), 0)
+                np.savetxt('/home/manu/tmp/pytorch_output_dr_%s.txt' % w, dr[w].flatten(), fmt="%f", delimiter="\n")
             for w in range(cfg.DATASET.KEYPOINT.NUM):
                 for j in range(len(shifts)):
                     if j == 0:
@@ -175,12 +178,12 @@ class Inferer:
                 kps[w] = np.array([x * 4 + 2, y * 4 + 2])
                 scores[w, 0] = score_map[w, int(round(y) + 1e-9), \
                                          int(round(x) + 1e-9)]
-                # fn_txt = '/home/manu/tmp/results_pytorch.txt'
-                # if os.path.exists(fn_txt):
-                #     os.remove(fn_txt)
-                # for kp, score in zip(kps, scores):
-                #     with open(fn_txt, 'a') as f:
-                #         f.write(f'{kp[0]} {kp[1]} {score[0]} \n')
+                fn_txt = '/home/manu/tmp/results_pytorch_rsn_mid.txt'
+                if os.path.exists(fn_txt):
+                    os.remove(fn_txt)
+                for kp, score in zip(kps, scores):
+                    with open(fn_txt, 'a') as f:
+                        f.write(f'{kp[0]} {kp[1]} {score[0]} \n')
             # aligned or not ...
             kps[:, 0] = kps[:, 0] / cfg.INPUT_SHAPE[1] * scales[i][0] + \
                         centers[i][0] - scales[i][0] * 0.5
@@ -204,7 +207,8 @@ def draw_dets(img, dets, color=(0, 255, 255)):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source',
-                        default='/media/manu/samsung/pics/rsn.bmp',
+                        default='/media/manu/samsung/pics/kps.bmp',
+                        # default='/home/manu/nfs/rv1126/install/rknn_yolov5_demo/model/player_1280.bmp',
                         type=str)
     parser.add_argument('--weights', default='/home/manu/tmp/iter-96000.pth', type=str)
     parser.add_argument('--device', default=0, type=int, help='-1 for cpu')
@@ -225,19 +229,20 @@ def main():
     img = cv2.imread(args.source, cv2.IMREAD_COLOR)
     # cv2.imwrite('/home/manu/tmp/rsn_org.bmp', img)
     dets = np.array([[153.53, 231.12, 270.17, 403.95, 0.3091]])  # [x, y, w, h, score]
+    # dets = np.array([[825., 679., 111.1, 244.2, 0.92078]])  # [x, y, w, h, score]
 
     # draw_dets(img, dets)
 
     results = inferer.inference(img, dets)
     logging.info(results)
 
-    fn_txt = '/home/manu/tmp/results_pytorch.txt'
+    fn_txt = '/home/manu/tmp/results_pytorch_rsn.txt'
     if os.path.exists(fn_txt):
         os.remove(fn_txt)
     joints = np.array(results[0]['keypoints']).reshape((17, 3))
     for kp in joints:
         with open(fn_txt, 'a') as f:
-            f.write(f'{kp[0]} {kp[1]} \n')
+            f.write(f'{kp[0]} {kp[1]} {kp[2]} \n')
 
     img = inferer.draw_results(img, results)
     cv2.imshow('results', img)

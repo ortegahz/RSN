@@ -37,6 +37,8 @@ class Config:
     INPUT.NORMALIZE = True
     INPUT.MEANS = [0.406, 0.456, 0.485] # bgr
     INPUT.STDS = [0.225, 0.224, 0.229]
+    # INPUT.MEANS = [0., 0., 0.]
+    # INPUT.STDS = [1., 1., 1.]
 
     # edict will automatcally convert tuple to list, so ..
     INPUT_SHAPE = dataset.INPUT_SHAPE
